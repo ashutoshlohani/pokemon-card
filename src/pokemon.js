@@ -2,12 +2,14 @@ import * as React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 
 const formatDate = date =>
-   `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')} ${String(
+   `⌚${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}:${String(
       date.getSeconds()
-   ).padStart(2, '0')}.${String(date.getMilliseconds()).padStart(3, '0')}`;
+   ).padStart(2, '0')}`;
+
+// ============================================================ //
 
 // the delay argument is for faking things out a bit
-function fetchPokemon(name, delay = 100) {
+function fetchPokemon(name, delay = 500) {
    const pokemonQuery = `
     query PokemonInfo($name: String) {
       pokemon(name: $name) {
@@ -60,12 +62,14 @@ function fetchPokemon(name, delay = 100) {
       });
 }
 
+// ============================================================ //
+
 function PokemonInfoFallback({ name }) {
    const initialName = React.useRef(name).current;
    const fallbackPokemonData = {
       name: initialName,
       number: 'XXX',
-      image: '/img/pokemon/fallback-pokemon.jpg',
+      image: 'https://img.icons8.com/ios-glyphs/30/000000/spinner-frame-5.png',
       attacks: {
          special: [
             { name: 'Loading Attack 1', type: 'Type', damage: 'XX' },
@@ -76,6 +80,8 @@ function PokemonInfoFallback({ name }) {
    };
    return <PokemonDataView pokemon={fallbackPokemonData} />;
 }
+
+// ============================================================ //
 
 function PokemonDataView({ pokemon }) {
    return (
@@ -105,6 +111,8 @@ function PokemonDataView({ pokemon }) {
       </div>
    );
 }
+
+// ============================================================ //
 
 function PokemonForm({
    pokemonName: externalPokemonName,
@@ -178,6 +186,8 @@ function PokemonForm({
       </form>
    );
 }
+
+// ============================================================ //
 
 function ErrorFallback({ error, resetErrorBoundary }) {
    return (
