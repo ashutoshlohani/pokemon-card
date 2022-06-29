@@ -6,10 +6,10 @@ const formatDate = date =>
       date.getSeconds()
    ).padStart(2, '0')}`;
 
-// ============================================================ //
+// ======================================================================== //
 
 // the delay argument is for faking things out a bit
-function fetchPokemon(name, delay = 500) {
+function fetchPokemon(name, delay = 1500) {
    const pokemonQuery = `
     query PokemonInfo($name: String) {
       pokemon(name: $name) {
@@ -30,8 +30,7 @@ function fetchPokemon(name, delay = 500) {
 
    return window
       .fetch('https://graphql-pokemon2.vercel.app/', {
-         // learn more about this API here: https://wayfair.github.io/dociql/
-         // test pokemon queries here: https://graphql-pokemon2.vercel.app/
+         // learn more about this API here: https://graphql-pokemon2.vercel.app/
          method: 'POST',
          headers: {
             'content-type': 'application/json;charset=UTF-8',
@@ -62,7 +61,7 @@ function fetchPokemon(name, delay = 500) {
       });
 }
 
-// ============================================================ //
+// ======================================================================== //
 
 function PokemonInfoFallback({ name }) {
    const initialName = React.useRef(name).current;
@@ -81,7 +80,7 @@ function PokemonInfoFallback({ name }) {
    return <PokemonDataView pokemon={fallbackPokemonData} />;
 }
 
-// ============================================================ //
+// ======================================================================== //
 
 function PokemonDataView({ pokemon }) {
    return (
@@ -112,7 +111,7 @@ function PokemonDataView({ pokemon }) {
    );
 }
 
-// ============================================================ //
+// ======================================================================== //
 
 function PokemonForm({
    pokemonName: externalPokemonName,
@@ -187,7 +186,7 @@ function PokemonForm({
    );
 }
 
-// ============================================================ //
+// ======================================================================== //
 
 function ErrorFallback({ error, resetErrorBoundary }) {
    return (

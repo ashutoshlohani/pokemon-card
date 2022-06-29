@@ -1,45 +1,97 @@
 import * as React from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
-import { PokemonForm, fetchPokemon, PokemonDataView, PokemonInfoFallback } from './pokemon';
+import {
+   fetchPokemon,
+   PokemonForm,
+   PokemonDataView,
+   PokemonInfoFallback,
+   PokemonErrorBoundary,
+} from './pokemon';
+
+function asyncReducer(state, action) {
+   switch (action.type) {
+      case 'pending': {
+         return { status: 'pending', data: null, error: null };
+      }
+      case 'resolved': {
+         return { status: 'resolved', data: action.data, error: null };
+      }
+      case 'rejected': {
+         return { status: 'rejected', data: null, error: action.error };
+      }
+      default: {
+         throw new Error(`Unhandled action type: ${action.type}`);
+      }
+   }
+}
+
+function useAsync(initialState) {
+   const [state, unsafeDispatch] = React.useReducer(asyncReducer, {
+      status: 'idle',
+      data: null,
+      error: null,
+      ...initialState,
+   });
+
+   const mountedRef = React.useRef(false);
+
+   React.useEffect(() => {
+      mountedRef.current = true;
+      return () => {
+         mountedRef.current = false;
+      };
+   }, []);
+
+   const dispatch = React.useCallback((...args) => {
+      if (mountedRef.current) {
+         unsafeDispatch(...args);
+      }
+   }, []);
+
+   const run = React.useCallback(
+      promise => {
+         dispatch({ type: 'pending' });
+         promise.then(
+            data => {
+               dispatch({ type: 'resolved', data });
+            },
+            error => {
+               dispatch({ type: 'rejected', error });
+            }
+         );
+      },
+      [dispatch]
+   );
+
+   return { ...state, run };
+}
 
 function PokemonInfo({ pokemonName }) {
-   const [state, setState] = React.useState({ status: 'idle', pokemon: null, error: null });
-   const { status, pokemon, error } = state;
+   const {
+      status,
+      data: pokemon,
+      error,
+      run,
+   } = useAsync({ status: pokemonName ? 'pending' : 'idle' });
 
    React.useEffect(() => {
       if (!pokemonName) {
          return;
       }
-      setState({ status: 'pending' });
+      return run(fetchPokemon(pokemonName));
+   }, [pokemonName, run]);
 
-      fetchPokemon(pokemonName).then(
-         pokemon => {
-            setState({ pokemon, status: 'resolved' });
-         },
-         error => {
-            setState({ error, status: 'rejected' });
-         }
-      );
-   }, [pokemonName]);
-
-   if (status === 'idle') {
-      return 'Submit a Pokemon';
-   } else if (status === 'pending') {
-      return <PokemonInfoFallback name={pokemonName} />;
-   } else if (status === 'resolved') {
-      return <PokemonDataView pokemon={pokemon} />;
-   } else if (status === 'rejected') {
-      throw new Error();
+   switch (status) {
+      case 'idle':
+         return <span>Submit a pokemon</span>;
+      case 'pending':
+         return <PokemonInfoFallback name={pokemonName} />;
+      case 'rejected':
+         throw error;
+      case 'resolved':
+         return <PokemonDataView pokemon={pokemon} />;
+      default:
+         throw new Error('This should be impossible');
    }
-}
-
-function ErrorFallback({ error, resetErrorBoundary }) {
-   return (
-      <div role='alert'>
-         There was an error: <pre style={{ whiteSpace: 'normal' }}>{error.message}</pre>
-         <button onClick={resetErrorBoundary}>Try again</button>
-      </div>
-   );
 }
 
 function App() {
@@ -58,15 +110,30 @@ function App() {
          <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
          <hr />
          <div className='pokemon-info'>
-            <ErrorBoundary
-               FallbackComponent={ErrorFallback}
-               onReset={handleReset}
-               resetKeys={[pokemonName]}>
+            <PokemonErrorBoundary onReset={handleReset} resetKeys={[pokemonName]}>
                <PokemonInfo pokemonName={pokemonName} />
-            </ErrorBoundary>
+            </PokemonErrorBoundary>
          </div>
       </div>
    );
 }
 
-export default App;
+function AppWithUnmountCheckbox() {
+   const [mountApp, setMountApp] = React.useState(true);
+   return (
+      <div>
+         <label>
+            <input
+               type='checkbox'
+               checked={mountApp}
+               onChange={e => setMountApp(e.target.checked)}
+            />{' '}
+            Mount Component
+         </label>
+         <hr />
+         {mountApp ? <App /> : null}
+      </div>
+   );
+}
+
+export default AppWithUnmountCheckbox;
